@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 
 export const metadata = {
   title: 'Proyectos - Humboldt Atlas',
-  description: 'Descubre los proyectos de investigación y conservación del Parque Alejandro de Humboldt',
+  description: 'Descubre los proyectos de investigación del Parque Alejandro de Humboldt',
 };
 
 export default function ProyectosPage() {
