@@ -11,7 +11,8 @@ import {
   query, 
   where, 
   orderBy,
-  addDoc
+  addDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -48,18 +49,18 @@ import {
   Award,
   Activity,
   UserCheck,
-  PenTool
+  PenTool,
+  CalendarPlus
 } from 'lucide-react';
 import { toast } from 'sonner';
-// ✅ Importar los tipos del panel de admin
-import { 
-  AdminSolicitud, 
-  AdminPublicacionPendiente, 
-  AdminUsuario,
-  AdminStats
+import type { 
+  InvestigadorSolicitud, 
+  PublicacionPendiente, 
+  UserProfile,
+  Event
 } from '@/types';
 
-// Interfaces locales para el panel (evitan conflictos con tipos complejos)
+// Interfaces locales
 interface LocalSolicitud {
   id: string;
   userId: string;
@@ -89,6 +90,7 @@ interface LocalPublicacion {
   images?: string[];
   tags?: string[];
   reviewedAt?: any;
+  reviewerComment?: string;
 }
 
 interface LocalUsuario {
@@ -114,15 +116,17 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   
-  // Estados con interfaces locales
+  // Estados
   const [solicitudes, setSolicitudes] = useState<LocalSolicitud[]>([]);
   const [publicacionesPendientes, setPublicacionesPendientes] = useState<LocalPublicacion[]>([]);
+  const [eventosPendientes, setEventosPendientes] = useState<Event[]>([]);
   const [usuarios, setUsuarios] = useState<LocalUsuario[]>([]);
   const [stats, setStats] = useState({
     totalUsuarios: 0,
     totalPublicaciones: 0,
     solicitudesPendientes: 0,
     publicacionesPendientes: 0,
+    eventosPendientes: 0,
     investigadores: 0,
     admins: 0,
     verificados: 0
@@ -132,14 +136,12 @@ export default function AdminPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState('');
 
-  // Verificar permisos de admin
   useEffect(() => {
     if (!authLoading && (!user || (userRole !== 'admin' && userRole !== 'super_admin'))) {
       router.push('/');
     }
   }, [user, userRole, authLoading, router]);
 
-  // Cargar datos
   useEffect(() => {
     if (user && (userRole === 'admin' || userRole === 'super_admin')) {
       loadAllData();
@@ -149,7 +151,7 @@ export default function AdminPage() {
   const loadAllData = async () => {
     setLoading(true);
     try {
-      // 1. Cargar solicitudes de investigadores
+      // Solicitudes
       const solicitudesQuery = query(
         collection(db, 'investigador_solicitudes'),
         where('status', '==', 'pendiente')
@@ -161,7 +163,7 @@ export default function AdminPage() {
       })) as LocalSolicitud[];
       setSolicitudes(solicitudesData);
 
-      // 2. Cargar publicaciones pendientes
+      // Publicaciones pendientes
       const publicacionesQuery = query(
         collection(db, 'publicaciones_pendientes'),
         where('status', '==', 'pending'),
@@ -174,7 +176,20 @@ export default function AdminPage() {
       })) as LocalPublicacion[];
       setPublicacionesPendientes(publicacionesData);
 
-      // 3. Cargar usuarios
+      // ✅ Eventos pendientes
+      const eventosQuery = query(
+        collection(db, 'eventos'),
+        where('approvalStatus', '==', 'pending'),
+        orderBy('createdAt', 'desc')
+      );
+      const eventosSnap = await getDocs(eventosQuery);
+      const eventosData = eventosSnap.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      })) as Event[];
+      setEventosPendientes(eventosData);
+
+      // Usuarios
       const usuariosSnap = await getDocs(collection(db, 'users'));
       const usuariosData = usuariosSnap.docs.map(doc => ({ 
         id: doc.id, 
@@ -182,7 +197,7 @@ export default function AdminPage() {
       })) as LocalUsuario[];
       setUsuarios(usuariosData);
       
-      // 4. Calcular estadísticas
+      // Estadísticas
       const investigadores = usuariosData.filter(u => u.role === 'investigador').length;
       const admins = usuariosData.filter(u => u.role === 'admin' || u.role === 'super_admin').length;
       const verificados = usuariosData.filter(u => u.verificationStatus === 'verified').length;
@@ -192,6 +207,7 @@ export default function AdminPage() {
         totalPublicaciones: 0,
         solicitudesPendientes: solicitudesData.length,
         publicacionesPendientes: publicacionesData.length,
+        eventosPendientes: eventosData.length,
         investigadores,
         admins,
         verificados
@@ -201,6 +217,51 @@ export default function AdminPage() {
       toast.error('Error al cargar datos');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ Aprobar evento
+  const aprobarEvento = async (eventoId: string) => {
+    try {
+      await updateDoc(doc(db, 'eventos', eventoId), {
+        approvalStatus: 'approved',
+        publishedAt: new Date(),
+        reviewedBy: user?.uid
+      });
+      
+      toast.success('Evento aprobado y publicado');
+      loadAllData();
+    } catch (error) {
+      toast.error('Error al aprobar evento');
+    }
+  };
+
+  // ✅ Rechazar evento
+  const rechazarEvento = async (eventoId: string) => {
+    try {
+      await updateDoc(doc(db, 'eventos', eventoId), {
+        approvalStatus: 'rejected',
+        rejectedAt: new Date(),
+        reviewedBy: user?.uid
+      });
+      
+      toast.success('Evento rechazado');
+      loadAllData();
+    } catch (error) {
+      toast.error('Error al rechazar evento');
+    }
+  };
+
+  // ✅ Eliminar evento (solo super_admin)
+  const eliminarEvento = async (eventoId: string) => {
+    if (!confirm('¿Estás seguro de eliminar este evento permanentemente?')) return;
+    
+    try {
+      await deleteDoc(doc(db, 'eventos', eventoId));
+      toast.success('Evento eliminado');
+      loadAllData();
+    } catch (error) {
+      toast.error('Error al eliminar evento');
     }
   };
 
@@ -278,7 +339,6 @@ export default function AdminPage() {
     }
   };
 
-  // Calcular porcentajes
   const porcentajeInvestigadores = stats.totalUsuarios > 0 
     ? (stats.investigadores / stats.totalUsuarios) * 100 
     : 0;
@@ -308,7 +368,7 @@ export default function AdminPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
           <TabsTrigger value="dashboard">
             <Activity className="h-4 w-4 mr-2" /> Dashboard
           </TabsTrigger>
@@ -318,6 +378,9 @@ export default function AdminPage() {
           <TabsTrigger value="publicaciones">
             Publicaciones ({stats.publicacionesPendientes})
           </TabsTrigger>
+          <TabsTrigger value="eventos">
+            <CalendarPlus className="h-4 w-4 mr-2" /> Eventos ({stats.eventosPendientes})
+          </TabsTrigger>
           <TabsTrigger value="usuarios">
             <Users className="h-4 w-4 mr-2" /> Usuarios
           </TabsTrigger>
@@ -326,7 +389,7 @@ export default function AdminPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Dashboard */}
+        {/* Dashboard - Igual que antes */}
         <TabsContent value="dashboard">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Card>
@@ -366,10 +429,10 @@ export default function AdminPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Publicaciones Pendientes</p>
-                    <p className="text-2xl font-bold">{stats.publicacionesPendientes}</p>
+                    <p className="text-sm text-muted-foreground">Eventos Pendientes</p>
+                    <p className="text-2xl font-bold">{stats.eventosPendientes}</p>
                   </div>
-                  <FileText className="h-8 w-8 text-purple-600" />
+                  <CalendarPlus className="h-8 w-8 text-purple-600" />
                 </div>
               </CardContent>
             </Card>
@@ -439,10 +502,10 @@ export default function AdminPage() {
                 <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Publicaciones pendientes</p>
-                      <p className="text-2xl font-bold text-purple-600">{stats.publicacionesPendientes}</p>
+                      <p className="text-sm text-muted-foreground">Eventos pendientes</p>
+                      <p className="text-2xl font-bold text-purple-600">{stats.eventosPendientes}</p>
                     </div>
-                    <PenTool className="h-8 w-8 text-purple-600" />
+                    <CalendarPlus className="h-8 w-8 text-purple-600" />
                   </div>
                 </div>
                 <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
@@ -459,7 +522,7 @@ export default function AdminPage() {
           </div>
         </TabsContent>
 
-        {/* Solicitudes */}
+        {/* Solicitudes - Igual que antes */}
         <TabsContent value="solicitudes">
           <Card>
             <CardHeader>
@@ -570,6 +633,90 @@ export default function AdminPage() {
           </Card>
         </TabsContent>
 
+        {/* ✅ NUEVO: Eventos Pendientes */}
+        <TabsContent value="eventos">
+          <Card>
+            <CardHeader>
+              <CardTitle>Eventos Pendientes de Aprobación</CardTitle>
+              <CardDescription>Revisa y aprueba los eventos creados por investigadores</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {eventosPendientes.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No hay eventos pendientes de aprobación</p>
+              ) : (
+                <div className="space-y-4">
+                  {eventosPendientes.map((evento) => (
+                    <Card key={evento.id} className="p-4 border-yellow-200 dark:border-yellow-800/50">
+                      <div className="flex flex-col md:flex-row justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold">{evento.title}</h3>
+                            <Badge className="bg-yellow-500">Pendiente</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Organizador: {evento.organizer} • {evento.type}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            📅 {evento.date} {evento.time} • 📍 {evento.location}
+                          </p>
+                          <p className="text-sm mt-2 line-clamp-2">{evento.description}</p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {evento.audience.map((a) => (
+                              <Badge key={a} variant="secondary" className="text-xs">
+                                {a}
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Capacidad: {evento.capacity} • Registrados: {evento.registered}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedItem(evento);
+                              setDialogType('evento');
+                              setDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" /> Ver
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="bg-green-600"
+                            onClick={() => aprobarEvento(evento.id)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" /> Aprobar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => rechazarEvento(evento.id)}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" /> Rechazar
+                          </Button>
+                          {userRole === 'super_admin' && (
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              className="bg-red-800 hover:bg-red-900"
+                              onClick={() => eliminarEvento(evento.id)}
+                            >
+                              🗑️
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Usuarios */}
         <TabsContent value="usuarios">
           <Card>
@@ -657,7 +804,9 @@ export default function AdminPage() {
                     <Calendar className="h-12 w-12 mx-auto text-blue-600 mb-3" />
                     <h3 className="font-semibold">Eventos</h3>
                     <p className="text-sm text-muted-foreground">Gestionar eventos y actividades</p>
-                    <Button variant="outline" className="mt-4">Administrar</Button>
+                    <Button variant="outline" className="mt-4" asChild>
+                      <a href="/eventos">Administrar</a>
+                    </Button>
                   </CardContent>
                 </Card>
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow">
@@ -679,12 +828,14 @@ export default function AdminPage() {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {dialogType === 'solicitud' ? 'Detalle de Solicitud' : 'Detalle de Publicación'}
+              {dialogType === 'solicitud' && 'Detalle de Solicitud'}
+              {dialogType === 'publicacion' && 'Detalle de Publicación'}
+              {dialogType === 'evento' && 'Detalle de Evento'}
             </DialogTitle>
             <DialogDescription>
-              {dialogType === 'solicitud' 
-                ? 'Revisa la información del solicitante' 
-                : 'Revisa el contenido de la publicación'}
+              {dialogType === 'solicitud' && 'Revisa la información del solicitante'}
+              {dialogType === 'publicacion' && 'Revisa el contenido de la publicación'}
+              {dialogType === 'evento' && 'Revisa la información del evento'}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -704,6 +855,21 @@ export default function AdminPage() {
                 <p><strong>Tipo:</strong> {selectedItem.type}</p>
                 <p><strong>Contenido:</strong></p>
                 <p className="text-muted-foreground whitespace-pre-wrap">{selectedItem.content}</p>
+              </div>
+            )}
+            {dialogType === 'evento' && selectedItem && (
+              <div className="space-y-3">
+                <p><strong>Título:</strong> {selectedItem.title}</p>
+                <p><strong>Organizador:</strong> {selectedItem.organizer}</p>
+                <p><strong>Fecha:</strong> {selectedItem.date} {selectedItem.time}</p>
+                <p><strong>Ubicación:</strong> {selectedItem.location}</p>
+                <p><strong>Capacidad:</strong> {selectedItem.capacity}</p>
+                <p><strong>Audiencia:</strong> {selectedItem.audience?.join(', ')}</p>
+                <p><strong>Descripción:</strong></p>
+                <p className="text-muted-foreground whitespace-pre-wrap">{selectedItem.description}</p>
+                {selectedItem.requirements?.length > 0 && (
+                  <p><strong>Requisitos:</strong> {selectedItem.requirements.join(', ')}</p>
+                )}
               </div>
             )}
           </div>

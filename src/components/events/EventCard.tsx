@@ -3,15 +3,14 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Clock } from "lucide-react";
-import type { Event, EventType, EventStatus } from "@/types";
+import { Calendar, MapPin, Users, Clock, CheckCircle } from "lucide-react";
+import type { Event } from "@/types";
 
 interface EventCardProps {
   event: Event;
   onClick: (event: Event) => void;
 }
 
-// Función auxiliar para formatear fechas sin date-fns
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   const options: Intl.DateTimeFormatOptions = { 
@@ -24,7 +23,6 @@ function formatDate(dateString: string): string {
 
 function formatDateRange(startDate: string, endDate?: string): string {
   if (!endDate) return formatDate(startDate);
-  const start = new Date(startDate);
   const end = new Date(endDate);
   const options: Intl.DateTimeFormatOptions = { 
     day: 'numeric', 
@@ -33,8 +31,7 @@ function formatDateRange(startDate: string, endDate?: string): string {
   return `${formatDate(startDate)} - ${end.toLocaleDateString('es', options)}`;
 }
 
-// ✅ Definir los objetos con sus tipos explícitos
-const typeColors: Record<EventType, string> = {
+const typeColors: Record<string, string> = {
   taller: "bg-blue-500",
   circulo_interes: "bg-green-500",
   charla: "bg-purple-500",
@@ -42,7 +39,7 @@ const typeColors: Record<EventType, string> = {
   voluntariado: "bg-rose-500",
 };
 
-const typeLabels: Record<EventType, string> = {
+const typeLabels: Record<string, string> = {
   taller: "Taller",
   circulo_interes: "Círculo de Interés",
   charla: "Charla",
@@ -50,7 +47,7 @@ const typeLabels: Record<EventType, string> = {
   voluntariado: "Voluntariado",
 };
 
-const statusColors: Record<EventStatus, string> = {
+const statusColors: Record<string, string> = {
   proximo: "bg-emerald-500",
   en_curso: "bg-amber-500",
   finalizado: "bg-gray-500",
@@ -58,28 +55,39 @@ const statusColors: Record<EventStatus, string> = {
 };
 
 export function EventCard({ event, onClick }: EventCardProps) {
-  const eventDate = new Date(event.date);
-  const isMultiDay = event.endDate;
   const availableSpots = event.capacity - event.registered;
   const isFull = availableSpots === 0;
+  const isPending = event.approvalStatus === 'pending';
+  const isRejected = event.approvalStatus === 'rejected';
+  const isApproved = event.approvalStatus === 'approved';
+
+  if (isRejected) return null;
 
   return (
     <Card className="group overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300">
       <div className="relative h-48">
         <img
-          src={event.imageUrl}
+          src={event.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format'}
           alt={event.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
-          <Badge className={`${typeColors[event.type]} text-white border-0`}>
-            {typeLabels[event.type]}
+          <Badge className={`${typeColors[event.type] || 'bg-gray-500'} text-white border-0`}>
+            {typeLabels[event.type] || event.type}
           </Badge>
-          <Badge className={`${statusColors[event.status]} text-white border-0`}>
-            {event.status === 'proximo' ? 'Próximo' : 
-             event.status === 'en_curso' ? 'En curso' : 
-             event.status === 'finalizado' ? 'Finalizado' : 'Cancelado'}
-          </Badge>
+          {isPending && (
+            <Badge className="bg-yellow-500 text-white border-0">
+              <Clock className="h-3 w-3 mr-1" />
+              Pendiente
+            </Badge>
+          )}
+          {isApproved && (
+            <Badge className={`${statusColors[event.status] || 'bg-gray-500'} text-white border-0`}>
+              {event.status === 'proximo' ? 'Próximo' : 
+               event.status === 'en_curso' ? 'En curso' : 
+               event.status === 'finalizado' ? 'Finalizado' : 'Cancelado'}
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -90,7 +98,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4 shrink-0" />
             <span>
-              {isMultiDay 
+              {event.endDate 
                 ? formatDateRange(event.date, event.endDate)
                 : formatDate(event.date)
               }
@@ -116,27 +124,17 @@ export function EventCard({ event, onClick }: EventCardProps) {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1 mb-4">
-          {event.audience.map((aud) => (
-            <Badge key={aud} variant="secondary" className="text-xs">
-              {aud === 'niños' ? '👶 Niños' :
-               aud === 'jovenes' ? '🧑 Jóvenes' :
-               aud === 'adultos' ? '👨 Adultos' :
-               aud === 'comunidad' ? '🏘️ Comunidad' : '👪 Familiar'}
-            </Badge>
-          ))}
-        </div>
-
         <Button 
           className="w-full"
-          variant={isFull ? "outline" : "default"}
-          disabled={isFull || event.status !== 'proximo'}
+          variant={isFull || isPending ? "outline" : "default"}
+          disabled={isFull || isPending || event.status !== 'proximo'}
           onClick={(e) => {
             e.stopPropagation();
             onClick(event);
           }}
         >
-          {isFull ? 'Completo' : 'Ver detalles'}
+          {isPending ? '⏳ Pendiente de aprobación' :
+           isFull ? 'Completo' : 'Ver detalles'}
         </Button>
       </div>
     </Card>

@@ -1,18 +1,14 @@
-import { useState } from "react";
+'use client';
+
+import { useState, useEffect } from 'react';
 import { EventCard } from "./EventCard";
 import { EventModal } from "./EventModal";
 import { useEventsStore } from "@/store/eventsStore";
+import { useFirestore } from "@/hooks/useFirestore";
 import { Event } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar as CalendarIcon, Filter } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Search, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function EventsSection() {
@@ -23,8 +19,30 @@ export function EventsSection() {
     setSearchQuery,
     selectedTypes,
     toggleType,
-    resetFilters 
+    resetFilters,
+    setEvents
   } = useEventsStore();
+
+  // ✅ Cargar eventos desde Firebase
+  const { data: eventosFirebase, loading, error } = useFirestore<Event>('eventos');
+
+  // ✅ Cuando los datos cambian, actualizar el store
+  useEffect(() => {
+    if (eventosFirebase) {
+      // Solo mostrar eventos aprobados
+      const approvedEvents = eventosFirebase.filter(e => e.approvalStatus === 'approved');
+      setEvents(approvedEvents);
+    }
+  }, [eventosFirebase, setEvents]);
+
+  useEffect(() => {
+  if (eventosFirebase) {
+    const approvedEvents = eventosFirebase
+      .filter(e => e.approvalStatus === 'approved')
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // ✅ Ordenar por fecha
+    setEvents(approvedEvents);
+  }
+}, [eventosFirebase, setEvents]);
 
   const eventTypes = [
     { value: 'taller', label: 'Talleres' },
@@ -33,6 +51,24 @@ export function EventsSection() {
     { value: 'excursion', label: 'Excursiones' },
     { value: 'voluntariado', label: 'Voluntariado' },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-600 p-8">
+        Error al cargar eventos: {error.message}
+      </div>
+    );
+  }
+
+  
 
   return (
     <section className="py-16 bg-muted/30">

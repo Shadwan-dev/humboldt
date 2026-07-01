@@ -19,15 +19,24 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import type { Event, EventType, EventStatus } from "@/types";
+import type { Event } from "@/types";
 
 interface EventModalProps {
   event: Event | null;
   onClose: () => void;
 }
 
-// ✅ Objetos tipados para colores y etiquetas
-const typeColors: Record<EventType, string> = {
+function formatDate(date: Date): string {
+  const options: Intl.DateTimeFormatOptions = { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  };
+  return date.toLocaleDateString('es', options);
+}
+
+const typeColors: Record<string, string> = {
   taller: "bg-blue-500",
   circulo_interes: "bg-green-500",
   charla: "bg-purple-500",
@@ -35,7 +44,7 @@ const typeColors: Record<EventType, string> = {
   voluntariado: "bg-rose-500",
 };
 
-const typeLabels: Record<EventType, string> = {
+const typeLabels: Record<string, string> = {
   taller: "Taller",
   circulo_interes: "Círculo de Interés",
   charla: "Charla",
@@ -51,17 +60,6 @@ const audienceLabels: Record<string, string> = {
   familiar: "👪 Familiar",
 };
 
-// ✅ Función para formatear fechas sin date-fns
-function formatDate(date: Date): string {
-  const options: Intl.DateTimeFormatOptions = { 
-    weekday: 'long', 
-    day: 'numeric', 
-    month: 'long', 
-    year: 'numeric' 
-  };
-  return date.toLocaleDateString('es', options);
-}
-
 export function EventModal({ event, onClose }: EventModalProps) {
   if (!event) return null;
 
@@ -70,23 +68,28 @@ export function EventModal({ event, onClose }: EventModalProps) {
   const availableSpots = event.capacity - event.registered;
   const isFull = availableSpots === 0;
   const isPast = new Date(event.endDate || event.date) < new Date();
+  const isPending = event.approvalStatus === 'pending';
 
   return (
     <Dialog open={!!event} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        {/* Header con imagen */}
         <div className="relative h-56 -mt-6 -mx-6 mb-6">
           <img
-            src={event.imageUrl}
+            src={event.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format'}
             alt={event.title}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           
-          <div className="absolute top-4 left-4">
+          <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
             <Badge className={`${typeColors[event.type]} text-white border-0 px-3 py-1`}>
               {typeLabels[event.type]}
             </Badge>
+            {isPending && (
+              <Badge className="bg-yellow-500 text-white border-0 px-3 py-1">
+                ⏳ Pendiente
+              </Badge>
+            )}
           </div>
 
           <div className="absolute bottom-4 left-4 right-4">
@@ -98,38 +101,43 @@ export function EventModal({ event, onClose }: EventModalProps) {
           </div>
         </div>
 
-        {/* Contenido */}
         <div className="space-y-6">
           {/* Estado y disponibilidad */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {event.status === 'proximo' && (
+              {event.status === 'proximo' && !isPending && (
                 <Badge variant="outline" className="text-emerald-600 border-emerald-600">
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   Próximo
                 </Badge>
               )}
-              {event.status === 'en_curso' && (
+              {event.status === 'en_curso' && !isPending && (
                 <Badge variant="outline" className="text-amber-600 border-amber-600">
                   <AlertCircle className="h-3 w-3 mr-1" />
                   En curso
                 </Badge>
               )}
-              {event.status === 'finalizado' && (
+              {event.status === 'finalizado' && !isPending && (
                 <Badge variant="outline" className="text-gray-600 border-gray-600">
                   <XCircle className="h-3 w-3 mr-1" />
                   Finalizado
                 </Badge>
               )}
-              {event.status === 'cancelado' && (
+              {event.status === 'cancelado' && !isPending && (
                 <Badge variant="outline" className="text-rose-600 border-rose-600">
                   <XCircle className="h-3 w-3 mr-1" />
                   Cancelado
                 </Badge>
               )}
+              {isPending && (
+                <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Pendiente de aprobación
+                </Badge>
+              )}
             </div>
             
-            {event.status === 'proximo' && (
+            {event.status === 'proximo' && !isPending && (
               <div className="text-right">
                 <p className={`text-sm font-medium ${isFull ? 'text-rose-600' : 'text-green-600'}`}>
                   {isFull ? 'Completo' : `${availableSpots} lugares disponibles`}
@@ -256,7 +264,7 @@ export function EventModal({ event, onClose }: EventModalProps) {
           </div>
 
           {/* Botón de inscripción */}
-          {event.status === 'proximo' && !isPast && (
+          {event.status === 'proximo' && !isPast && !isPending && (
             <Button className="w-full" size="lg" disabled={isFull}>
               {isFull ? 'Lista de espera' : 'Inscribirme ahora'}
             </Button>

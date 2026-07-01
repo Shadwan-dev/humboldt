@@ -1,4 +1,4 @@
-import { Event } from '@/types';
+import type { Event } from '@/types';
 
 export const eventsData: Event[] = [
   {
@@ -10,14 +10,18 @@ export const eventsData: Event[] = [
     date: '2026-03-15',
     time: '09:00 - 12:00',
     location: 'Centro de Visitantes La Bachata',
-    imageUrl: 'https://images.pexels.com/photos/2131824/pexels-photo-2131824.jpeg?auto=compress&cs=tinysrgb&w=800',
+    imageUrl: '/img/eventos/guardianes-manglar.jpg',
     capacity: 25,
     registered: 18,
     status: 'proximo',
+    approvalStatus: 'approved', // ✅ Nuevo campo
     organizer: 'Equipo de Educación Ambiental',
+    organizerId: 'admin', // ✅ Nuevo campo (ID del creador)
     contactEmail: 'educacion@humboldtpark.eco',
     requirements: ['Ropa cómoda', 'Gorra', 'Agua', 'Protector solar'],
-    tags: ['niños', 'manglares', 'educación', 'conservación']
+    tags: ['niños', 'manglares', 'educación', 'conservación'],
+    createdAt: new Date('2026-01-15'), // ✅ Nuevo campo
+    publishedAt: new Date('2026-01-20'), // ✅ Nuevo campo
   },
   {
     id: '2',
@@ -28,13 +32,17 @@ export const eventsData: Event[] = [
     date: '2026-03-20',
     time: '18:00 - 20:00',
     location: 'Casa de la Cultura, Baracoa',
-    imageUrl: 'https://images.pexels.com/photos/256381/pexels-photo-256381.jpeg?auto=compress&cs=tinysrgb&w=800',
+    imageUrl: '/img/eventos/charla-carbono14.jpg',
     capacity: 50,
     registered: 32,
     status: 'proximo',
+    approvalStatus: 'approved',
     organizer: 'Departamento de Investigación',
+    organizerId: 'admin',
     contactEmail: 'investigacion@humboldtpark.eco',
-    tags: ['cambio climático', 'ciencia', 'comunidad', 'carbono14']
+    tags: ['cambio climático', 'ciencia', 'comunidad', 'carbono14'],
+    createdAt: new Date('2026-01-18'),
+    publishedAt: new Date('2026-01-22'),
   },
   {
     id: '3',
@@ -46,14 +54,18 @@ export const eventsData: Event[] = [
     endDate: '2026-03-27',
     time: '07:00 - 10:00',
     location: 'Sendero El Yunque',
-    imageUrl: 'https://images.pexels.com/photos/1327405/pexels-photo-1327405.jpeg?auto=compress&cs=tinysrgb&w=800',
+    imageUrl: '/img/eventos/taller-aves.jpg',
     capacity: 15,
     registered: 9,
     status: 'proximo',
+    approvalStatus: 'approved',
     organizer: 'Sociedad Ornitológica Cubana',
+    organizerId: 'admin',
     contactEmail: 'aves@humboldtpark.eco',
     requirements: ['Binoculares (si tiene)', 'Ropa de campo', 'Cámara opcional'],
-    tags: ['aves', 'endémicas', 'observación', 'taller']
+    tags: ['aves', 'endémicas', 'observación', 'taller'],
+    createdAt: new Date('2026-01-20'),
+    publishedAt: new Date('2026-01-25'),
   },
   {
     id: '4',
@@ -64,14 +76,18 @@ export const eventsData: Event[] = [
     date: '2026-04-05',
     time: '08:00 - 15:00',
     location: 'Playa Duaba',
-    imageUrl: 'https://images.pexels.com/photos/1006121/pexels-photo-1006121.jpeg?auto=compress&cs=tinysrgb&w=800',
+    imageUrl: '/img/eventos/voluntariado-playa.jpg',
     capacity: 30,
     registered: 30,
     status: 'proximo',
+    approvalStatus: 'approved',
     organizer: 'Proyecto Tortugas Caribe',
+    organizerId: 'admin',
     contactEmail: 'voluntarios@humboldtpark.eco',
     requirements: ['Guantes', 'Botas de agua', 'Almuerzo', 'Agua'],
-    tags: ['voluntariado', 'playa', 'tortugas', 'conservación']
+    tags: ['voluntariado', 'playa', 'tortugas', 'conservación'],
+    createdAt: new Date('2026-01-25'),
+    publishedAt: new Date('2026-02-01'),
   },
   {
     id: '5',
@@ -83,13 +99,17 @@ export const eventsData: Event[] = [
     endDate: '2026-05-31',
     time: '14:00 - 16:00 (sábados)',
     location: 'Aula Ambiental, Sede del Parque',
-    imageUrl: 'https://images.pexels.com/photos/8613079/pexels-photo-8613079.jpeg?auto=compress&cs=tinysrgb&w=800',
+    imageUrl: '/img/eventos/pequenos-cientificos.jpg',
     capacity: 20,
     registered: 14,
     status: 'en_curso',
+    approvalStatus: 'approved',
     organizer: 'Equipo de Educación',
+    organizerId: 'admin',
     contactEmail: 'educacion@humboldtpark.eco',
     requirements: ['Cuaderno', 'Lápiz', 'Curiosidad'],
-    tags: ['niños', 'ciencia', 'bosque', 'educación']
-  }
+    tags: ['niños', 'ciencia', 'bosque', 'educación'],
+    createdAt: new Date('2026-01-10'),
+    publishedAt: new Date('2026-01-15'),
+  },
 ];
