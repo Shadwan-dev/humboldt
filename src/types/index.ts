@@ -1,185 +1,4 @@
 // ============================================
-// TIPOS PARA EL PERFIL DE USUARIO (NUEVOS)
-// ============================================
-
-/**
- * Publicación del usuario en el perfil
- */
-export interface ProfilePublication {
-  id: string;
-  title: string;
-  content?: string;
-  type: string;
-  authorId: string;
-  authorName: string;
-  status: 'published' | 'pending' | 'approved' | 'rejected';
-  publishedAt?: any;
-  submittedAt?: any;
-}
-
-/**
- * Comentario del usuario en el perfil
- */
-export interface ProfileComment {
-  id: string;
-  content: string;
-  authorId: string;
-  authorName: string;
-  createdAt: any;
-  likes?: number;
-  replies?: ProfileComment[];
-}
-
-/**
- * Proyecto seguido por el usuario
- */
-export interface ProfileFollowedProject {
-  projectId: string;
-  projectTitle: string;
-  followedAt: any;
-  notifications?: boolean;
-}
-
-/**
- * Insignia/logro del usuario
- */
-export interface ProfileBadge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  earnedAt: any;
-}
-
-// ============================================
-// TIPOS PARA EL PANEL DE ADMINISTRACIÓN (NUEVOS)
-// ============================================
-
-/**
- * Solicitud de investigador para el panel de admin
- */
-export interface AdminSolicitud {
-  id: string;
-  userId: string;
-  userEmail: string;
-  userDisplayName: string;
-  institucion: string;
-  especialidad: string;
-  motivacion: string;
-  identificacion?: {
-    tipo: string;
-    numero: string;
-  };
-  status: 'pendiente' | 'aprobado' | 'rechazado';
-  createdAt: any;
-  reviewedAt?: any;
-}
-
-/**
- * Publicación pendiente para el panel de admin
- */
-export interface AdminPublicacionPendiente {
-  id: string;
-  title: string;
-  content: string;
-  type: string;
-  authorId: string;
-  authorName: string;
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: any;
-  images?: string[];
-  tags?: string[];
-  reviewedAt?: any;
-  reviewerComment?: string;
-}
-
-/**
- * Usuario para el panel de admin
- */
-export interface AdminUsuario {
-  id: string;
-  uid: string;
-  email: string;
-  displayName?: string;
-  role: string;
-  verificationStatus: string;
-  bio?: string;
-  institution?: string;
-  specialty?: string;
-  socialLinks?: {
-    twitter?: string;
-    linkedin?: string;
-    googleScholar?: string;
-  };
-  stats?: {
-    contributions: number;
-    publications: number;
-    comments: number;
-    projectsFollowed: number;
-  };
-  badges?: any[];
-  createdAt: any;
-  lastLogin: any;
-}
-
-// ============================================
-// TIPOS PARA LA GALERÍA DE ESPECIES (NUEVOS)
-// ============================================
-
-/**
- * Especie para la galería con campos adicionales
- */
-export interface GallerySpecies {
-  id: string;
-  nombreComun: string;
-  nombreCientifico: string;
-  categoria: SpeciesType;
-  estatus: SpeciesStatus;
-  habitat: string;
-  descripcion: string;
-  imageUrl: string;
-  estadoConservacion: 'preocupación menor' | 'casi amenazada' | 'vulnerable' | 'en peligro' | 'crítico';
-  autorId?: string;
-  autorNombre?: string;
-  createdAt: any;
-  status: 'published';
-}
-
-/**
- * Estadísticas del dashboard del admin
- */
-export interface AdminStats {
-  totalUsuarios: number;
-  totalPublicaciones: number;
-  solicitudesPendientes: number;
-  publicacionesPendientes: number;
-  investigadores: number;
-  admins: number;
-  verificados: number;
-}
-
-// ✅ Asegúrate de que Event esté exportado
-export interface Event {
-  id: string;
-  title: string;
-  description: string;
-  type: EventType;
-  audience: EventAudience[];
-  date: string;
-  endDate?: string;
-  time: string;
-  location: string;
-  imageUrl: string;
-  capacity: number;
-  registered: number;
-  status: EventStatus;
-  organizer: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  requirements?: string[];
-  tags: string[];
-}
-// ============================================
 // TIPOS PARA ESPECIES
 // ============================================
 
@@ -203,12 +22,13 @@ export interface Species {
 }
 
 // ============================================
-// TIPOS PARA EVENTOS (✅ Asegurar que estén aquí)
+// TIPOS PARA EVENTOS (VERSIÓN ÚNICA Y ACTUALIZADA)
 // ============================================
 
 export type EventType = 'taller' | 'circulo_interes' | 'charla' | 'excursion' | 'voluntariado';
 export type EventAudience = 'niños' | 'jovenes' | 'adultos' | 'comunidad' | 'familiar';
 export type EventStatus = 'proximo' | 'en_curso' | 'finalizado' | 'cancelado';
+export type EventApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Event {
   id: string;
@@ -224,11 +44,16 @@ export interface Event {
   capacity: number;
   registered: number;
   status: EventStatus;
+  approvalStatus: EventApprovalStatus;
   organizer: string;
+  organizerId: string;
   contactEmail?: string;
   contactPhone?: string;
   requirements?: string[];
   tags: string[];
+  createdAt: any;
+  publishedAt?: any;
+  rejectedReason?: string;
 }
 
 // ============================================
@@ -401,7 +226,7 @@ export interface Contribution {
 }
 
 // ============================================
-// TIPOS PARA EL PERFIL DE USUARIO (NUEVOS)
+// TIPOS PARA EL PERFIL DE USUARIO
 // ============================================
 
 export interface ProfilePublication {

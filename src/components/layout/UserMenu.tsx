@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, LogOut, FileText, Camera, Shield, LayoutDashboard, Loader2, Image as ImageIcon } from 'lucide-react';
+import { User, LogOut, FileText, Camera, Shield, LayoutDashboard, Loader2, Image as ImageIcon, CalendarPlus } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -48,7 +48,7 @@ export function UserMenu() {
   const initials = user.email?.[0].toUpperCase() || 'U';
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
   const isInvestigador = userRole === 'investigador';
-  const puedeCrearEspecies = isAdmin || isInvestigador; // ✅ Admins e investigadores pueden crear especies
+  const puedeCrear = isAdmin || isInvestigador;
 
   return (
     <DropdownMenu>
@@ -81,7 +81,6 @@ export function UserMenu() {
           </Link>
         </DropdownMenuItem>
 
-        {/* Panel de Administración - SOLO para admins */}
         {isAdmin && (
           <DropdownMenuItem asChild>
             <Link href="/admin" className="cursor-pointer">
@@ -91,17 +90,23 @@ export function UserMenu() {
           </DropdownMenuItem>
         )}
 
-        {/* ✅ NUEVA ESPECIE - Para admins e investigadores */}
-        {puedeCrearEspecies && (
-          <DropdownMenuItem asChild>
-            <Link href="/investigador/nueva-especie" className="cursor-pointer">
-              <ImageIcon className="mr-2 h-4 w-4" />
-              Nueva Especie
-            </Link>
-          </DropdownMenuItem>
+        {puedeCrear && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/investigador/nueva-especie" className="cursor-pointer">
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Nueva Especie
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/investigador/nuevo-evento" className="cursor-pointer">
+                <CalendarPlus className="mr-2 h-4 w-4" />
+                Nuevo Evento
+              </Link>
+            </DropdownMenuItem>
+          </>
         )}
 
-        {/* Nuevo Artículo - Solo para investigadores (no admins) */}
         {isInvestigador && (
           <DropdownMenuItem asChild>
             <Link href="/investigador/nuevo-articulo" className="cursor-pointer">
@@ -111,7 +116,6 @@ export function UserMenu() {
           </DropdownMenuItem>
         )}
 
-        {/* Para todos los usuarios autenticados */}
         <DropdownMenuItem asChild>
           <Link href="/ciudadano/reportar" className="cursor-pointer">
             <Camera className="mr-2 h-4 w-4" />

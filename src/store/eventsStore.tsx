@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { Event, EventType, EventAudience, EventStatus } from '@/types';
-import { eventsData } from '@/data/events';
 
 interface EventsState {
   events: Event[];
@@ -14,12 +13,13 @@ interface EventsState {
   toggleAudience: (audience: EventAudience) => void;
   toggleStatus: (status: EventStatus) => void;
   resetFilters: () => void;
-  applyFilters: () => void;
+  applyFilters: (events: Event[]) => void;
+  setEvents: (events: Event[]) => void;
 }
 
 export const useEventsStore = create<EventsState>((set, get) => ({
-  events: eventsData,
-  filteredEvents: eventsData,
+  events: [],
+  filteredEvents: [],
   selectedTypes: [],
   selectedAudiences: [],
   selectedStatus: ['proximo', 'en_curso'],
@@ -27,7 +27,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
   
   setSearchQuery: (searchQuery) => {
     set({ searchQuery });
-    get().applyFilters();
+    get().applyFilters(get().events);
   },
   
   toggleType: (type) => {
@@ -36,7 +36,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
       ? current.filter(t => t !== type)
       : [...current, type];
     set({ selectedTypes });
-    get().applyFilters();
+    get().applyFilters(get().events);
   },
   
   toggleAudience: (audience) => {
@@ -45,7 +45,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
       ? current.filter(a => a !== audience)
       : [...current, audience];
     set({ selectedAudiences });
-    get().applyFilters();
+    get().applyFilters(get().events);
   },
   
   toggleStatus: (status) => {
@@ -54,7 +54,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
       ? current.filter(s => s !== status)
       : [...current, status];
     set({ selectedStatus });
-    get().applyFilters();
+    get().applyFilters(get().events);
   },
   
   resetFilters: () => {
@@ -64,23 +64,19 @@ export const useEventsStore = create<EventsState>((set, get) => ({
       selectedStatus: ['proximo', 'en_curso'],
       searchQuery: '',
     });
-    get().applyFilters();
+    get().applyFilters(get().events);
   },
   
-  applyFilters: () => {
-    const { events, selectedTypes, selectedAudiences, selectedStatus, searchQuery } = get();
+  applyFilters: (events) => {
+    const { selectedTypes, selectedAudiences, selectedStatus, searchQuery } = get();
     
     const filtered = events.filter(event => {
-      // Filtro por tipo
+      // Solo mostrar eventos aprobados
+      if (event.approvalStatus !== 'approved') return false;
+      
       if (selectedTypes.length > 0 && !selectedTypes.includes(event.type)) return false;
-      
-      // Filtro por audiencia
       if (selectedAudiences.length > 0 && !event.audience.some(a => selectedAudiences.includes(a))) return false;
-      
-      // Filtro por estado
       if (selectedStatus.length > 0 && !selectedStatus.includes(event.status)) return false;
-      
-      // Filtro por búsqueda
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
@@ -90,10 +86,14 @@ export const useEventsStore = create<EventsState>((set, get) => ({
           event.tags.some(tag => tag.toLowerCase().includes(query))
         );
       }
-      
       return true;
     });
     
     set({ filteredEvents: filtered });
+  },
+  
+  setEvents: (events) => {
+    set({ events });
+    get().applyFilters(events);
   },
 }));
