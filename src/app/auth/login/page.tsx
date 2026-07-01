@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,8 +15,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +66,7 @@ export default function LoginPage() {
       if (err.code === 'auth/popup-closed-by-user') {
         toast.info('Cancelaste el inicio de sesión con Google');
       } else {
+        console.error('Error en Google Sign-In:', err);
         toast.error('Error al iniciar sesión con Google');
       }
     } finally {
@@ -68,6 +74,7 @@ export default function LoginPage() {
     }
   };
 
+  // ✅ Siempre renderizar, sin condiciones
   return (
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center bg-gradient-to-b from-green-50 to-white dark:from-gray-900 dark:to-gray-800 py-12 px-4">
       <Card className="w-full max-w-md">
@@ -142,7 +149,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* ✅ Separador */}
+          {/* ✅ Separador - SIEMPRE visible */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300 dark:border-gray-600" />
@@ -154,7 +161,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* ✅ Botón de Google */}
+          {/* ✅ Botón de Google - SIEMPRE visible */}
           <Button
             type="button"
             variant="outline"
