@@ -22,7 +22,7 @@ export interface Species {
 }
 
 // ============================================
-// TIPOS PARA EVENTOS (VERSIÓN ÚNICA Y ACTUALIZADA)
+// TIPOS PARA EVENTOS
 // ============================================
 
 export type EventType = 'taller' | 'circulo_interes' | 'charla' | 'excursion' | 'voluntariado';
@@ -57,12 +57,13 @@ export interface Event {
 }
 
 // ============================================
-// TIPOS PARA PROYECTOS
+// TIPOS PARA PROYECTOS (SOLO UNA VEZ)
 // ============================================
 
 export type ProjectType = 'investigacion' | 'conservacion' | 'restauracion' | 'educacion' | 'monitoreo';
 export type ProjectStatus = 'activo' | 'finalizado' | 'en_planeacion';
 export type ResearchArea = 'carbono14' | 'manglares' | 'especies_amenazadas' | 'cambio_climatico' | 'biodiversidad';
+export type ProjectApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Project {
   id: string;
@@ -75,6 +76,7 @@ export interface Project {
   startDate: string;
   endDate?: string;
   coordinator: string;
+  coordinatorId: string;
   institution: string;
   collaborators: string[];
   objectives: string[];
@@ -89,6 +91,10 @@ export interface Project {
   location: string;
   progress: number;
   tags: string[];
+  approvalStatus: ProjectApprovalStatus;
+  createdAt: any;
+  publishedAt?: any;
+  rejectedReason?: string;
 }
 
 // ============================================
@@ -103,7 +109,6 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL?: string;
-  avatarUrl?: string;
   role: UserRole;
   verificationStatus: 'pending' | 'verified' | 'rejected';
   verifiedAt?: Date;
@@ -334,6 +339,8 @@ export interface AdminStats {
   totalPublicaciones: number;
   solicitudesPendientes: number;
   publicacionesPendientes: number;
+  eventosPendientes: number;
+  proyectosPendientes: number;
   investigadores: number;
   admins: number;
   verificados: number;

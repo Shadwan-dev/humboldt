@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, LogOut, FileText, Camera, Shield, LayoutDashboard, Loader2, Image as ImageIcon, CalendarPlus } from 'lucide-react';
+import { User, LogOut, FileText, Camera, Shield, LayoutDashboard, Loader2, PlusCircle, Image as ImageIcon, CalendarPlus } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { doc, getDoc } from 'firebase/firestore';
@@ -111,21 +111,27 @@ export function UserMenu() {
         )}
 
         {puedeCrear && (
-          <>
-            <DropdownMenuItem asChild>
-              <Link href="/investigador/nueva-especie" className="cursor-pointer">
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Nueva Especie
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/investigador/nuevo-evento" className="cursor-pointer">
-                <CalendarPlus className="mr-2 h-4 w-4" />
-                Nuevo Evento
-              </Link>
-            </DropdownMenuItem>
-          </>
-        )}
+  <>
+    <DropdownMenuItem asChild>
+      <Link href="/investigador/nueva-especie" className="cursor-pointer">
+        <ImageIcon className="mr-2 h-4 w-4" />
+        Nueva Especie
+      </Link>
+    </DropdownMenuItem>
+    <DropdownMenuItem asChild>
+      <Link href="/investigador/nuevo-evento" className="cursor-pointer">
+        <CalendarPlus className="mr-2 h-4 w-4" />
+        Nuevo Evento
+      </Link>
+    </DropdownMenuItem>
+    <DropdownMenuItem asChild>
+      <Link href="/investigador/nuevo-proyecto" className="cursor-pointer">
+        <PlusCircle className="mr-2 h-4 w-4" />
+        Nuevo Proyecto
+      </Link>
+    </DropdownMenuItem>
+  </>
+)}
 
         {isInvestigador && (
           <DropdownMenuItem asChild>

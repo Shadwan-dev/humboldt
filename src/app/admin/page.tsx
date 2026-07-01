@@ -50,14 +50,16 @@ import {
   Activity,
   UserCheck,
   PenTool,
-  CalendarPlus
+  CalendarPlus,
+  PlusCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { 
   InvestigadorSolicitud, 
   PublicacionPendiente, 
   UserProfile,
-  Event
+  Event,
+  Project
 } from '@/types';
 
 // Interfaces locales
@@ -120,6 +122,7 @@ export default function AdminPage() {
   const [solicitudes, setSolicitudes] = useState<LocalSolicitud[]>([]);
   const [publicacionesPendientes, setPublicacionesPendientes] = useState<LocalPublicacion[]>([]);
   const [eventosPendientes, setEventosPendientes] = useState<Event[]>([]);
+  const [proyectosPendientes, setProyectosPendientes] = useState<Project[]>([]);
   const [usuarios, setUsuarios] = useState<LocalUsuario[]>([]);
   const [stats, setStats] = useState({
     totalUsuarios: 0,
@@ -127,6 +130,7 @@ export default function AdminPage() {
     solicitudesPendientes: 0,
     publicacionesPendientes: 0,
     eventosPendientes: 0,
+    proyectosPendientes: 0,
     investigadores: 0,
     admins: 0,
     verificados: 0
@@ -176,7 +180,7 @@ export default function AdminPage() {
       })) as LocalPublicacion[];
       setPublicacionesPendientes(publicacionesData);
 
-      // ✅ Eventos pendientes
+      // Eventos pendientes
       const eventosQuery = query(
         collection(db, 'eventos'),
         where('approvalStatus', '==', 'pending'),
@@ -188,6 +192,19 @@ export default function AdminPage() {
         ...doc.data() 
       })) as Event[];
       setEventosPendientes(eventosData);
+
+      // ✅ Proyectos pendientes
+      const proyectosQuery = query(
+        collection(db, 'proyectos'),
+        where('approvalStatus', '==', 'pending'),
+        orderBy('createdAt', 'desc')
+      );
+      const proyectosSnap = await getDocs(proyectosQuery);
+      const proyectosData = proyectosSnap.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      })) as Project[];
+      setProyectosPendientes(proyectosData);
 
       // Usuarios
       const usuariosSnap = await getDocs(collection(db, 'users'));
@@ -208,6 +225,7 @@ export default function AdminPage() {
         solicitudesPendientes: solicitudesData.length,
         publicacionesPendientes: publicacionesData.length,
         eventosPendientes: eventosData.length,
+        proyectosPendientes: proyectosData.length,
         investigadores,
         admins,
         verificados
@@ -217,6 +235,51 @@ export default function AdminPage() {
       toast.error('Error al cargar datos');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ Aprobar proyecto
+  const aprobarProyecto = async (proyectoId: string) => {
+    try {
+      await updateDoc(doc(db, 'proyectos', proyectoId), {
+        approvalStatus: 'approved',
+        publishedAt: new Date(),
+        reviewedBy: user?.uid
+      });
+      
+      toast.success('Proyecto aprobado y publicado');
+      loadAllData();
+    } catch (error) {
+      toast.error('Error al aprobar proyecto');
+    }
+  };
+
+  // ✅ Rechazar proyecto
+  const rechazarProyecto = async (proyectoId: string) => {
+    try {
+      await updateDoc(doc(db, 'proyectos', proyectoId), {
+        approvalStatus: 'rejected',
+        rejectedAt: new Date(),
+        reviewedBy: user?.uid
+      });
+      
+      toast.success('Proyecto rechazado');
+      loadAllData();
+    } catch (error) {
+      toast.error('Error al rechazar proyecto');
+    }
+  };
+
+  // ✅ Eliminar proyecto (solo super_admin)
+  const eliminarProyecto = async (proyectoId: string) => {
+    if (!confirm('¿Estás seguro de eliminar este proyecto permanentemente?')) return;
+    
+    try {
+      await deleteDoc(doc(db, 'proyectos', proyectoId));
+      toast.success('Proyecto eliminado');
+      loadAllData();
+    } catch (error) {
+      toast.error('Error al eliminar proyecto');
     }
   };
 
@@ -368,7 +431,7 @@ export default function AdminPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-7">
           <TabsTrigger value="dashboard">
             <Activity className="h-4 w-4 mr-2" /> Dashboard
           </TabsTrigger>
@@ -381,6 +444,9 @@ export default function AdminPage() {
           <TabsTrigger value="eventos">
             <CalendarPlus className="h-4 w-4 mr-2" /> Eventos ({stats.eventosPendientes})
           </TabsTrigger>
+          <TabsTrigger value="proyectos">
+            <PlusCircle className="h-4 w-4 mr-2" /> Proyectos ({stats.proyectosPendientes})
+          </TabsTrigger>
           <TabsTrigger value="usuarios">
             <Users className="h-4 w-4 mr-2" /> Usuarios
           </TabsTrigger>
@@ -389,7 +455,7 @@ export default function AdminPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Dashboard - Igual que antes */}
+        {/* Dashboard */}
         <TabsContent value="dashboard">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Card>
@@ -418,10 +484,10 @@ export default function AdminPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Solicitudes Pendientes</p>
-                    <p className="text-2xl font-bold">{stats.solicitudesPendientes}</p>
+                    <p className="text-sm text-muted-foreground">Proyectos Pendientes</p>
+                    <p className="text-2xl font-bold">{stats.proyectosPendientes}</p>
                   </div>
-                  <Clock className="h-8 w-8 text-yellow-600" />
+                  <PlusCircle className="h-8 w-8 text-purple-600" />
                 </div>
               </CardContent>
             </Card>
@@ -432,7 +498,7 @@ export default function AdminPage() {
                     <p className="text-sm text-muted-foreground">Eventos Pendientes</p>
                     <p className="text-2xl font-bold">{stats.eventosPendientes}</p>
                   </div>
-                  <CalendarPlus className="h-8 w-8 text-purple-600" />
+                  <CalendarPlus className="h-8 w-8 text-amber-600" />
                 </div>
               </CardContent>
             </Card>
@@ -502,10 +568,19 @@ export default function AdminPage() {
                 <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Eventos pendientes</p>
-                      <p className="text-2xl font-bold text-purple-600">{stats.eventosPendientes}</p>
+                      <p className="text-sm text-muted-foreground">Proyectos pendientes</p>
+                      <p className="text-2xl font-bold text-purple-600">{stats.proyectosPendientes}</p>
                     </div>
-                    <CalendarPlus className="h-8 w-8 text-purple-600" />
+                    <PlusCircle className="h-8 w-8 text-purple-600" />
+                  </div>
+                </div>
+                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Eventos pendientes</p>
+                      <p className="text-2xl font-bold text-amber-600">{stats.eventosPendientes}</p>
+                    </div>
+                    <CalendarPlus className="h-8 w-8 text-amber-600" />
                   </div>
                 </div>
                 <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
@@ -522,7 +597,7 @@ export default function AdminPage() {
           </div>
         </TabsContent>
 
-        {/* Solicitudes - Igual que antes */}
+        {/* Solicitudes */}
         <TabsContent value="solicitudes">
           <Card>
             <CardHeader>
@@ -633,7 +708,7 @@ export default function AdminPage() {
           </Card>
         </TabsContent>
 
-        {/* ✅ NUEVO: Eventos Pendientes */}
+        {/* Eventos Pendientes */}
         <TabsContent value="eventos">
           <Card>
             <CardHeader>
@@ -703,6 +778,90 @@ export default function AdminPage() {
                               variant="destructive"
                               className="bg-red-800 hover:bg-red-900"
                               onClick={() => eliminarEvento(evento.id)}
+                            >
+                              🗑️
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ✅ Proyectos Pendientes */}
+        <TabsContent value="proyectos">
+          <Card>
+            <CardHeader>
+              <CardTitle>Proyectos Pendientes de Aprobación</CardTitle>
+              <CardDescription>Revisa y aprueba los proyectos creados por investigadores</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {proyectosPendientes.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No hay proyectos pendientes de aprobación</p>
+              ) : (
+                <div className="space-y-4">
+                  {proyectosPendientes.map((proyecto) => (
+                    <Card key={proyecto.id} className="p-4 border-purple-200 dark:border-purple-800/50">
+                      <div className="flex flex-col md:flex-row justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold">{proyecto.title}</h3>
+                            <Badge className="bg-yellow-500">Pendiente</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Tipo: {proyecto.type} • Estado: {proyecto.status}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Coordinador: {proyecto.coordinator} • Institución: {proyecto.institution}
+                          </p>
+                          <p className="text-sm mt-2 line-clamp-2">{proyecto.description}</p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {proyecto.researchArea?.map((area) => (
+                              <Badge key={area} variant="secondary" className="text-xs">
+                                {area}
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            📅 Inicio: {proyecto.startDate} • Progreso: {proyecto.progress}%
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedItem(proyecto);
+                              setDialogType('proyecto');
+                              setDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" /> Ver
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="bg-green-600"
+                            onClick={() => aprobarProyecto(proyecto.id)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" /> Aprobar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => rechazarProyecto(proyecto.id)}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" /> Rechazar
+                          </Button>
+                          {userRole === 'super_admin' && (
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              className="bg-red-800 hover:bg-red-900"
+                              onClick={() => eliminarProyecto(proyecto.id)}
                             >
                               🗑️
                             </Button>
@@ -814,7 +973,9 @@ export default function AdminPage() {
                     <TrendingUp className="h-12 w-12 mx-auto text-purple-600 mb-3" />
                     <h3 className="font-semibold">Proyectos</h3>
                     <p className="text-sm text-muted-foreground">Gestionar proyectos de investigación</p>
-                    <Button variant="outline" className="mt-4">Administrar</Button>
+                    <Button variant="outline" className="mt-4" asChild>
+                      <a href="/proyectos">Administrar</a>
+                    </Button>
                   </CardContent>
                 </Card>
               </div>
@@ -831,11 +992,13 @@ export default function AdminPage() {
               {dialogType === 'solicitud' && 'Detalle de Solicitud'}
               {dialogType === 'publicacion' && 'Detalle de Publicación'}
               {dialogType === 'evento' && 'Detalle de Evento'}
+              {dialogType === 'proyecto' && 'Detalle de Proyecto'}
             </DialogTitle>
             <DialogDescription>
               {dialogType === 'solicitud' && 'Revisa la información del solicitante'}
               {dialogType === 'publicacion' && 'Revisa el contenido de la publicación'}
               {dialogType === 'evento' && 'Revisa la información del evento'}
+              {dialogType === 'proyecto' && 'Revisa la información del proyecto'}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -869,6 +1032,29 @@ export default function AdminPage() {
                 <p className="text-muted-foreground whitespace-pre-wrap">{selectedItem.description}</p>
                 {selectedItem.requirements?.length > 0 && (
                   <p><strong>Requisitos:</strong> {selectedItem.requirements.join(', ')}</p>
+                )}
+              </div>
+            )}
+            {dialogType === 'proyecto' && selectedItem && (
+              <div className="space-y-3">
+                <p><strong>Título:</strong> {selectedItem.title}</p>
+                <p><strong>Coordinador:</strong> {selectedItem.coordinator}</p>
+                <p><strong>Institución:</strong> {selectedItem.institution}</p>
+                <p><strong>Tipo:</strong> {selectedItem.type}</p>
+                <p><strong>Estado:</strong> {selectedItem.status}</p>
+                <p><strong>Ubicación:</strong> {selectedItem.location}</p>
+                <p><strong>Progreso:</strong> {selectedItem.progress}%</p>
+                <p><strong>Descripción:</strong></p>
+                <p className="text-muted-foreground whitespace-pre-wrap">{selectedItem.description}</p>
+                {selectedItem.objectives && (
+                  <>
+                    <p><strong>Objetivos:</strong></p>
+                    <ul className="list-disc list-inside text-sm text-muted-foreground">
+                      {selectedItem.objectives.map((obj: string, i: number) => (
+                        <li key={i}>{obj}</li>
+                      ))}
+                    </ul>
+                  </>
                 )}
               </div>
             )}

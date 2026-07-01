@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { Project, ProjectType, ProjectStatus, ResearchArea } from '@/types';
-import { projectsData } from '@/data/projects';
 
 interface ProjectsState {
   projects: Project[];
@@ -14,12 +13,13 @@ interface ProjectsState {
   toggleStatus: (status: ProjectStatus) => void;
   toggleResearchArea: (area: ResearchArea) => void;
   resetFilters: () => void;
-  applyFilters: () => void;
+  applyFilters: (projects: Project[]) => void;
+  setProjects: (projects: Project[]) => void;
 }
 
 export const useProjectsStore = create<ProjectsState>((set, get) => ({
-  projects: projectsData,
-  filteredProjects: projectsData,
+  projects: [],
+  filteredProjects: [],
   selectedTypes: [],
   selectedStatus: ['activo', 'en_planeacion'],
   selectedResearchAreas: [],
@@ -27,7 +27,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   
   setSearchQuery: (searchQuery) => {
     set({ searchQuery });
-    get().applyFilters();
+    get().applyFilters(get().projects);
   },
   
   toggleType: (type) => {
@@ -36,7 +36,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       ? current.filter(t => t !== type)
       : [...current, type];
     set({ selectedTypes });
-    get().applyFilters();
+    get().applyFilters(get().projects);
   },
   
   toggleStatus: (status) => {
@@ -45,7 +45,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       ? current.filter(s => s !== status)
       : [...current, status];
     set({ selectedStatus });
-    get().applyFilters();
+    get().applyFilters(get().projects);
   },
   
   toggleResearchArea: (area) => {
@@ -54,7 +54,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       ? current.filter(a => a !== area)
       : [...current, area];
     set({ selectedResearchAreas });
-    get().applyFilters();
+    get().applyFilters(get().projects);
   },
   
   resetFilters: () => {
@@ -64,13 +64,16 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       selectedResearchAreas: [],
       searchQuery: '',
     });
-    get().applyFilters();
+    get().applyFilters(get().projects);
   },
   
-  applyFilters: () => {
-    const { projects, selectedTypes, selectedStatus, selectedResearchAreas, searchQuery } = get();
+  applyFilters: (projects) => {
+    const { selectedTypes, selectedStatus, selectedResearchAreas, searchQuery } = get();
     
     const filtered = projects.filter(project => {
+      // Solo mostrar proyectos aprobados
+      if (project.approvalStatus !== 'approved') return false;
+      
       if (selectedTypes.length > 0 && !selectedTypes.includes(project.type)) return false;
       if (selectedStatus.length > 0 && !selectedStatus.includes(project.status)) return false;
       if (selectedResearchAreas.length > 0 && 
@@ -91,5 +94,10 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     });
     
     set({ filteredProjects: filtered });
+  },
+  
+  setProjects: (projects) => {
+    set({ projects });
+    get().applyFilters(projects);
   },
 }));

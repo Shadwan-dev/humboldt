@@ -1,4 +1,4 @@
-import { Project } from '@/types';
+import type { Project } from '@/types';
 
 export const projectsData: Project[] = [
   {
@@ -11,6 +11,7 @@ export const projectsData: Project[] = [
     imageUrl: 'https://images.pexels.com/photos/2131824/pexels-photo-2131824.jpeg?auto=compress&cs=tinysrgb&w=800',
     startDate: '2024-01-15',
     coordinator: 'Dra. María Elena Rodríguez',
+    coordinatorId: 'admin', // ✅ Nuevo campo
     institution: 'Instituto de Ecología y Sistemática',
     collaborators: [
       'Universidad de La Habana',
@@ -38,7 +39,10 @@ export const projectsData: Project[] = [
     speciesInvolved: ['2', '6'],
     location: 'Costa norte, Parque Nacional Alejandro de Humboldt',
     progress: 65,
-    tags: ['manglares', 'carbono', 'cambio climático', 'investigación']
+    tags: ['manglares', 'carbono', 'cambio climático', 'investigación'],
+    approvalStatus: 'approved', // ✅ Nuevo campo
+    createdAt: new Date('2024-01-10'), // ✅ Nuevo campo
+    publishedAt: new Date('2024-01-20'), // ✅ Nuevo campo
   },
   {
     id: '2',
@@ -50,6 +54,7 @@ export const projectsData: Project[] = [
     imageUrl: 'https://images.pexels.com/photos/36717/parrot-bird-animal-nature.jpg?auto=compress&cs=tinysrgb&w=800',
     startDate: '2023-06-01',
     coordinator: 'Dr. Alejandro Pérez',
+    coordinatorId: 'admin', // ✅ Nuevo campo
     institution: 'Sociedad Cubana de Zoología',
     collaborators: [
       'Museo Nacional de Historia Natural',
@@ -77,7 +82,10 @@ export const projectsData: Project[] = [
     speciesInvolved: ['7'],
     location: 'Todo el parque',
     progress: 45,
-    tags: ['aves', 'endémicas', 'conservación', 'monitoreo']
+    tags: ['aves', 'endémicas', 'conservación', 'monitoreo'],
+    approvalStatus: 'approved', // ✅ Nuevo campo
+    createdAt: new Date('2023-05-20'), // ✅ Nuevo campo
+    publishedAt: new Date('2023-06-10'), // ✅ Nuevo campo
   },
   {
     id: '3',
@@ -89,6 +97,7 @@ export const projectsData: Project[] = [
     imageUrl: 'https://images.pexels.com/photos/256381/pexels-photo-256381.jpeg?auto=compress&cs=tinysrgb&w=800',
     startDate: '2024-09-10',
     coordinator: 'Dr. Roberto Méndez',
+    coordinatorId: 'admin', // ✅ Nuevo campo
     institution: 'Laboratorio de Datación, Universidad de La Habana',
     collaborators: [
       'Instituto de Geofísica',
@@ -108,7 +117,10 @@ export const projectsData: Project[] = [
     funding: 'Programa Iberoamericano de Ciencia',
     location: 'Zonas de turbera, cabezadas del río Toa',
     progress: 30,
-    tags: ['paleoecología', 'carbono14', 'clima', 'investigación']
+    tags: ['paleoecología', 'carbono14', 'clima', 'investigación'],
+    approvalStatus: 'approved', // ✅ Nuevo campo
+    createdAt: new Date('2024-09-01'), // ✅ Nuevo campo
+    publishedAt: new Date('2024-09-15'), // ✅ Nuevo campo
   },
   {
     id: '4',
@@ -121,6 +133,7 @@ export const projectsData: Project[] = [
     startDate: '2023-01-20',
     endDate: '2026-12-31',
     coordinator: 'Ing. Carlos Alberto Fernández',
+    coordinatorId: 'admin', // ✅ Nuevo campo
     institution: 'Parque Nacional Alejandro de Humboldt',
     collaborators: [
       'Empresa Forestal Integral',
@@ -143,6 +156,9 @@ export const projectsData: Project[] = [
     speciesInvolved: ['2', '4', '6', '8'],
     location: 'Zonas buffer y áreas degradadas',
     progress: 75,
-    tags: ['restauración', 'comunidades', 'viveros', 'bosque']
+    tags: ['restauración', 'comunidades', 'viveros', 'bosque'],
+    approvalStatus: 'approved', // ✅ Nuevo campo
+    createdAt: new Date('2023-01-10'), // ✅ Nuevo campo
+    publishedAt: new Date('2023-01-25'), // ✅ Nuevo campo
   }
 ];
