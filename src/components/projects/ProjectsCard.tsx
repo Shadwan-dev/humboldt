@@ -12,7 +12,6 @@ interface ProjectCardProps {
   onClick: (project: Project) => void;
 }
 
-// ✅ Función que acepta string | undefined
 function formatMonthYear(dateString: string | undefined): string {
   if (!dateString) return 'Fecha no disponible';
   const date = new Date(dateString);
@@ -47,12 +46,6 @@ const typeLabels = {
   monitoreo: "Monitoreo",
 };
 
-const statusColors = {
-  activo: "bg-emerald-500",
-  finalizado: "bg-gray-500",
-  en_planeacion: "bg-amber-500",
-};
-
 const researchAreaLabels: Record<string, string> = {
   carbono14: "Carbono 14",
   manglares: "Manglares",
@@ -71,7 +64,6 @@ const researchAreaColors: Record<string, string> = {
 
 export function ProjectCard({ project, onClick }: ProjectCardProps) {
   const Icon = typeIcons[project.type as keyof typeof typeIcons] || FlaskConical;
-  const startDate = new Date(project.startDate);
   const endDate = project.endDate ? new Date(project.endDate) : null;
 
   return (
@@ -89,7 +81,10 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
             <Icon className="h-3 w-3" />
             {typeLabels[project.type as keyof typeof typeLabels]}
           </Badge>
-          <Badge className={`${statusColors[project.status as keyof typeof statusColors]} text-white border-0`}>
+          <Badge className={`${
+            project.status === 'activo' ? 'bg-emerald-500' :
+            project.status === 'finalizado' ? 'bg-gray-500' : 'bg-amber-500'
+          } text-white border-0`}>
             {project.status === 'activo' ? 'Activo' : 
              project.status === 'finalizado' ? 'Finalizado' : 'En planeación'}
           </Badge>
@@ -141,29 +136,6 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
           </div>
           <Progress value={project.progress} className="h-2" />
         </div>
-
-        {project.collaborators.length > 0 && (
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex -space-x-2">
-              {project.collaborators.slice(0, 3).map((collab, i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border-2 border-background"
-                  title={collab}
-                >
-                  <span className="text-xs font-medium">
-                    {collab.charAt(0)}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {project.collaborators.length > 3 && (
-              <span className="text-xs text-muted-foreground">
-                +{project.collaborators.length - 3}
-              </span>
-            )}
-          </div>
-        )}
 
         <Button 
           className="w-full group"
