@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from 'sonner';
 
 export function EventsSection() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -23,26 +24,37 @@ export function EventsSection() {
     setEvents
   } = useEventsStore();
 
-  // ✅ Cargar eventos desde Firebase
+  // ✅ Cargar eventos desde Firebase con logs
   const { data: eventosFirebase, loading, error } = useFirestore<Event>('eventos');
 
-  // ✅ Cuando los datos cambian, actualizar el store
+  // ✅ Log para depuración en producción
+  useEffect(() => {
+    console.log('🔥 EventsSection - Estado:', { 
+      eventosFirebase: eventosFirebase?.length,
+      loading, 
+      error: error?.message,
+      hasData: !!eventosFirebase
+    });
+  }, [eventosFirebase, loading, error]);
+
+  // Cuando los datos cambian, actualizar el store
   useEffect(() => {
     if (eventosFirebase) {
-      // Solo mostrar eventos aprobados
-      const approvedEvents = eventosFirebase.filter(e => e.approvalStatus === 'approved');
+      const approvedEvents = eventosFirebase
+        .filter(e => e.approvalStatus === 'approved')
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       setEvents(approvedEvents);
+      console.log('✅ Eventos aprobados cargados:', approvedEvents.length);
     }
   }, [eventosFirebase, setEvents]);
 
+  // ✅ Mostrar error si hay
   useEffect(() => {
-  if (eventosFirebase) {
-    const approvedEvents = eventosFirebase
-      .filter(e => e.approvalStatus === 'approved')
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // ✅ Ordenar por fecha
-    setEvents(approvedEvents);
-  }
-}, [eventosFirebase, setEvents]);
+    if (error) {
+      console.error('❌ Error cargando eventos:', error);
+      toast.error('Error al cargar eventos: ' + error.message);
+    }
+  }, [error]);
 
   const eventTypes = [
     { value: 'taller', label: 'Talleres' },
@@ -52,107 +64,118 @@ export function EventsSection() {
     { value: 'voluntariado', label: 'Voluntariado' },
   ];
 
+  // ✅ Estados de carga mejorados
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex flex-col justify-center items-center h-64 gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        <p className="text-muted-foreground">Cargando eventos...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center text-red-600 p-8">
-        Error al cargar eventos: {error.message}
+      <div className="text-center py-12">
+        <p className="text-red-600">Error al cargar eventos: {error.message}</p>
+        <Button 
+          variant="outline" 
+          className="mt-4"
+          onClick={() => window.location.reload()}
+        >
+          Reintentar
+        </Button>
       </div>
     );
   }
 
-  
+  // ✅ Si no hay eventos
+  if (!eventosFirebase || eventosFirebase.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <p className="text-lg text-muted-foreground">
+          No hay eventos disponibles en este momento.
+        </p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Los eventos aparecerán aquí cuando sean aprobados por el administrador.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <section className="py-16 bg-muted/30">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              Eventos y Actividades
-            </span>
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Únete a nuestras actividades comunitarias y círculos de interés para aprender 
-            y participar en la conservación de nuestra biodiversidad.
-          </p>
+    <section className="py-8">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold">📅 Eventos Comunitarios</h1>
+        <p className="text-muted-foreground mt-2">
+          Descubre y participa en las actividades del Parque Alejandro de Humboldt
+        </p>
+      </div>
+
+      {/* Filtros */}
+      <div className="max-w-6xl mx-auto mb-8 space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Buscar eventos..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
-        {/* Filtros */}
-        <div className="max-w-6xl mx-auto mb-8 space-y-4">
-          {/* Búsqueda */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Buscar eventos..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {/* Filtros por tipo */}
-          <Tabs defaultValue="todos" className="w-full">
-            <TabsList className="flex flex-wrap h-auto p-1">
-              <TabsTrigger 
-                value="todos" 
-                onClick={() => resetFilters()}
+        <Tabs defaultValue="todos" className="w-full">
+          <TabsList className="flex flex-wrap h-auto p-1">
+            <TabsTrigger 
+              value="todos" 
+              onClick={() => resetFilters()}
+              className="flex-1"
+            >
+              Todos
+            </TabsTrigger>
+            {eventTypes.map((type) => (
+              <TabsTrigger
+                key={type.value}
+                value={type.value}
+                onClick={() => toggleType(type.value as any)}
                 className="flex-1"
               >
-                Todos
+                {type.label}
               </TabsTrigger>
-              {eventTypes.map((type) => (
-                <TabsTrigger
-                  key={type.value}
-                  value={type.value}
-                  onClick={() => toggleType(type.value as any)}
-                  data-state={selectedTypes.includes(type.value as any) ? "active" : "inactive"}
-                  className="flex-1"
-                >
-                  {type.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
 
-        {/* Grid de eventos */}
-        <div className="max-w-6xl mx-auto">
-          {filteredEvents.length === 0 ? (
-            <div className="text-center py-12">
-              <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg text-muted-foreground">
-                No hay eventos que coincidan con los filtros.
-              </p>
-              <Button variant="link" onClick={resetFilters}>
-                Limpiar filtros
-              </Button>
+      {/* Grid de eventos */}
+      <div className="max-w-6xl mx-auto">
+        {filteredEvents.length === 0 ? (
+          <div className="text-center py-12">
+            <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-lg text-muted-foreground">
+              No hay eventos que coincidan con los filtros.
+            </p>
+            <Button variant="link" onClick={resetFilters}>
+              Limpiar filtros
+            </Button>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground mb-4">
+              {filteredEvents.length} {filteredEvents.length === 1 ? 'evento encontrado' : 'eventos encontrados'}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredEvents.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  onClick={setSelectedEvent}
+                />
+              ))}
             </div>
-          ) : (
-            <>
-              <p className="text-sm text-muted-foreground mb-4">
-                {filteredEvents.length} {filteredEvents.length === 1 ? 'evento encontrado' : 'eventos encontrados'}
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    onClick={setSelectedEvent}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Modal de evento */}
