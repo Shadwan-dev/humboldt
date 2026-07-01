@@ -1,0 +1,46 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+// Rutas que requieren autenticación
+const protectedRoutes = ['/perfil', '/admin', '/dashboard'];
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // Verificar si la ruta actual está protegida
+  const isProtectedRoute = protectedRoutes.some(route => 
+    pathname === route || pathname.startsWith(`${route}/`)
+  );
+  
+  // Si no es ruta protegida, dejar pasar
+  if (!isProtectedRoute) {
+    return NextResponse.next();
+  }
+  
+  // Obtener la cookie de sesión
+  const sessionCookie = request.cookies.get('session')?.value;
+  
+  // Si no hay sesión, redirigir a login
+  if (!sessionCookie) {
+    const loginUrl = new URL('/auth/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+  
+  // Si hay sesión, dejar pasar
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     * - auth routes (login, register, etc.)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public|auth).*)',
+  ],
+};
