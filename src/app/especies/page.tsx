@@ -1,28 +1,21 @@
-import { FilterBar } from '@/components/filters/FilterBar';
-import { GalleryGrid } from '@/components/gallery/GalleryGrid';
+import { EventsSection } from '@/components/events/EventsSection';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 
-export default function EspeciesPage() {
+export const metadata = {
+  title: 'Eventos - Humboldt Atlas',
+  description: 'Descubre y participa en los eventos del Parque Alejandro de Humboldt',
+};
+
+export default function EventosPage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-4xl font-bold">🌿 Especies del Parque</h1>
-          <p className="text-muted-foreground mt-2">
-            Descubre la increíble biodiversidad del Parque Alejandro de Humboldt
-          </p>
-        </div>
-      </div>
-      
-      <FilterBar />
-      
       <Suspense fallback={
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-green-600" />
         </div>
       }>
-        <GalleryGrid />
+        <EventsSection />
       </Suspense>
     </div>
   );
