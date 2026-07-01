@@ -10,19 +10,6 @@ const nextConfig = {
       },
     ],
   },
-  // ✅ Configurar para que no falle el build si no puede descargar fuentes
-  experimental: {
-    optimizeFonts: true,
-  },
-  // ✅ Fallback local si no puede descargar
-  fontLoaders: [
-    {
-      loader: '@next/font/google',
-      options: {
-        fallback: ['system-ui', 'sans-serif'],
-      },
-    },
-  ],
 };
 
 module.exports = nextConfig;
