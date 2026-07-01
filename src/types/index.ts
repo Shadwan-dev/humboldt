@@ -103,6 +103,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL?: string;
+  avatarUrl?: string;
   role: UserRole;
   verificationStatus: 'pending' | 'verified' | 'rejected';
   verifiedAt?: Date;

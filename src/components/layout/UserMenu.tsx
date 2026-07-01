@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,12 +11,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, LogOut, FileText, Camera, Shield, LayoutDashboard, Loader2, Image as ImageIcon, CalendarPlus } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/client';
 
 export function UserMenu() {
   const { user, userRole, loading, signOut } = useAuth();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadAvatar = async () => {
+      if (!user) return;
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setAvatarUrl(data.avatarUrl || data.photoURL || null);
+      }
+    };
+    loadAvatar();
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -53,10 +70,13 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-            {initials}
-          </div>
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 hover:ring-2 hover:ring-green-500 transition-all">
+          <Avatar className="h-10 w-10 border-2 border-transparent hover:border-green-500 transition-all">
+            <AvatarImage src={avatarUrl || undefined} />
+            <AvatarFallback className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
         </Button>
       </DropdownMenuTrigger>
 

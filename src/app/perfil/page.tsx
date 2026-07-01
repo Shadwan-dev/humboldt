@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AvatarUploader } from '@/components/profile/AvatarUploader';
 import { 
   User, 
   Mail, 
@@ -340,11 +341,13 @@ export default function PerfilPage() {
         <div className="relative mb-8">
           <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl opacity-10" />
           <div className="relative flex flex-col md:flex-row items-center gap-6 p-6 bg-card rounded-2xl shadow-lg">
-            <Avatar className="h-24 w-24 border-4 border-green-500">
-              <AvatarFallback className="text-2xl bg-green-100 text-green-700">
-                {profile?.displayName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+              <AvatarUploader 
+    currentAvatarUrl={profile?.avatarUrl || profile?.photoURL || null}
+    displayName={profile?.displayName || user.email?.split('@')[0] || 'Usuario'}
+    onAvatarUpdate={(url) => {
+      setProfile({ ...profile, avatarUrl: url, photoURL: url });
+    }}
+  />
             
             <div className="flex-1 text-center md:text-left">
               <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
