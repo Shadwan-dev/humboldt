@@ -7,9 +7,11 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  signInWithPopup,
+  GoogleAuthProvider,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/client';
 
 interface AuthContextType {
@@ -20,6 +22,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;  // ✅ Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,12 +37,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(firebaseUser);
       
       if (firebaseUser) {
-        // Obtener el rol desde Firestore
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setUserRole(userData.role || 'basic');
         } else {
+          const newUserData = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
+            photoURL: firebaseUser.photoURL || '',
+            role: 'basic',
+            verificationStatus: 'verified',
+            bio: '',
+            institution: '',
+            specialty: '',
+            socialLinks: {},
+            stats: { contributions: 0, publications: 0, comments: 0, projectsFollowed: 0 },
+            badges: [],
+            createdAt: new Date(),
+            lastLogin: new Date(),
+            followedProjects: []
+          };
+          await setDoc(doc(db, 'users', firebaseUser.uid), newUserData);
           setUserRole('basic');
         }
       } else {
@@ -54,7 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const credential = await signInWithEmailAndPassword(auth, email, password);
-    // Actualizar rol después de login
     const userDoc = await getDoc(doc(db, 'users', credential.user.uid));
     if (userDoc.exists()) {
       setUserRole(userDoc.data().role || 'basic');
@@ -75,8 +94,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await sendPasswordResetEmail(auth, email);
   };
 
+  // ✅ signInWithGoogle con Promise<void>
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        const newUserData = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || user.email?.split('@')[0] || '',
+          photoURL: user.photoURL || '',
+          role: 'basic',
+          verificationStatus: 'verified',
+          bio: '',
+          institution: '',
+          specialty: '',
+          socialLinks: {},
+          stats: { contributions: 0, publications: 0, comments: 0, projectsFollowed: 0 },
+          badges: [],
+          createdAt: new Date(),
+          lastLogin: new Date(),
+          followedProjects: []
+        };
+        await setDoc(doc(db, 'users', user.uid), newUserData);
+        setUserRole('basic');
+      } else {
+        const userData = userDoc.data();
+        setUserRole(userData.role || 'basic');
+      }
+    } catch (error) {
+      console.error('Error en Google Sign-In:', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, userRole, loading, signIn, signUp, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      userRole, 
+      loading, 
+      signIn, 
+      signUp, 
+      signOut, 
+      resetPassword,
+      signInWithGoogle
+    }}>
       {children}
     </AuthContext.Provider>
   );

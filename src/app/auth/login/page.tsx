@@ -7,14 +7,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Leaf, Mail, Lock, Loader2 } from 'lucide-react';
+import { Leaf, Mail, Lock, Loader2, Chrome } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,6 +48,23 @@ export default function LoginPage() {
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+      toast.success('¡Bienvenido con Google!');
+      router.push('/');
+    } catch (err: any) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        toast.info('Cancelaste el inicio de sesión con Google');
+      } else {
+        toast.error('Error al iniciar sesión con Google');
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -122,17 +140,45 @@ export default function LoginPage() {
                 'Iniciar Sesión'
               )}
             </Button>
-
-            <div className="text-center text-sm">
-              <span className="text-muted-foreground">¿No tienes cuenta? </span>
-              <Link
-                href="/auth/registro"
-                className="text-green-600 hover:underline dark:text-green-400"
-              >
-                Regístrate aquí
-              </Link>
-            </div>
           </form>
+
+          {/* ✅ Separador */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-background px-2 text-muted-foreground">
+                O continúa con
+              </span>
+            </div>
+          </div>
+
+          {/* ✅ Botón de Google */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2"
+            onClick={handleGoogleSignIn}
+            disabled={googleLoading}
+          >
+            {googleLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Chrome className="h-4 w-4" />
+            )}
+            {googleLoading ? 'Conectando...' : 'Continuar con Google'}
+          </Button>
+
+          <div className="mt-6 text-center text-sm">
+            <span className="text-muted-foreground">¿No tienes cuenta? </span>
+            <Link
+              href="/auth/registro"
+              className="text-green-600 hover:underline dark:text-green-400"
+            >
+              Regístrate aquí
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
