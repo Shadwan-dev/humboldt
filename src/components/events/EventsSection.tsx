@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from 'sonner';
 
 export function EventsSection() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -24,18 +23,7 @@ export function EventsSection() {
     setEvents
   } = useEventsStore();
 
-  // ✅ Cargar eventos desde Firebase con logs
   const { data: eventosFirebase, loading, error } = useFirestore<Event>('eventos');
-
-  // ✅ Log para depuración en producción
-  useEffect(() => {
-    console.log('🔥 EventsSection - Estado:', { 
-      eventosFirebase: eventosFirebase?.length,
-      loading, 
-      error: error?.message,
-      hasData: !!eventosFirebase
-    });
-  }, [eventosFirebase, loading, error]);
 
   // Cuando los datos cambian, actualizar el store
   useEffect(() => {
@@ -44,17 +32,11 @@ export function EventsSection() {
         .filter(e => e.approvalStatus === 'approved')
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       setEvents(approvedEvents);
-      console.log('✅ Eventos aprobados cargados:', approvedEvents.length);
+    } else {
+      // ✅ Si no hay datos, limpiar el store
+      setEvents([]);
     }
   }, [eventosFirebase, setEvents]);
-
-  // ✅ Mostrar error si hay
-  useEffect(() => {
-    if (error) {
-      console.error('❌ Error cargando eventos:', error);
-      toast.error('Error al cargar eventos: ' + error.message);
-    }
-  }, [error]);
 
   const eventTypes = [
     { value: 'taller', label: 'Talleres' },
@@ -64,7 +46,6 @@ export function EventsSection() {
     { value: 'voluntariado', label: 'Voluntariado' },
   ];
 
-  // ✅ Estados de carga mejorados
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center h-64 gap-4">
@@ -89,17 +70,18 @@ export function EventsSection() {
     );
   }
 
-  // ✅ Si no hay eventos
-  if (!eventosFirebase || eventosFirebase.length === 0) {
+  // ✅ Si no hay eventos (la colección está vacía o no hay aprobados)
+  if (!filteredEvents || filteredEvents.length === 0) {
     return (
-      <div className="text-center py-12">
-        <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-lg text-muted-foreground">
-          No hay eventos disponibles en este momento.
+      <div className="text-center py-16">
+        <CalendarIcon className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+        <h3 className="text-xl font-semibold mb-2">No hay eventos disponibles</h3>
+        <p className="text-muted-foreground max-w-md mx-auto">
+          Los eventos aparecerán aquí cuando sean creados y aprobados por el administrador.
         </p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Los eventos aparecerán aquí cuando sean aprobados por el administrador.
-        </p>
+        <Button variant="outline" className="mt-4" asChild>
+          <a href="/investigador/nuevo-evento">Crear un evento</a>
+        </Button>
       </div>
     );
   }
@@ -150,32 +132,18 @@ export function EventsSection() {
 
       {/* Grid de eventos */}
       <div className="max-w-6xl mx-auto">
-        {filteredEvents.length === 0 ? (
-          <div className="text-center py-12">
-            <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg text-muted-foreground">
-              No hay eventos que coincidan con los filtros.
-            </p>
-            <Button variant="link" onClick={resetFilters}>
-              Limpiar filtros
-            </Button>
-          </div>
-        ) : (
-          <>
-            <p className="text-sm text-muted-foreground mb-4">
-              {filteredEvents.length} {filteredEvents.length === 1 ? 'evento encontrado' : 'eventos encontrados'}
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  onClick={setSelectedEvent}
-                />
-              ))}
-            </div>
-          </>
-        )}
+        <p className="text-sm text-muted-foreground mb-4">
+          {filteredEvents.length} {filteredEvents.length === 1 ? 'evento encontrado' : 'eventos encontrados'}
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEvents.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              onClick={setSelectedEvent}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Modal de evento */}
