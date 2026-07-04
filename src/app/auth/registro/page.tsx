@@ -143,6 +143,25 @@ export default function RegisterPage() {
                 'Registrarse'
               )}
             </Button>
+            <div className="flex items-start gap-2 mt-4">
+  <input
+    type="checkbox"
+    id="acepto-terminos"
+    required
+    className="mt-1 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+  />
+  <label htmlFor="acepto-terminos" className="text-xs text-muted-foreground">
+    He leído y acepto los{' '}
+    <Link href="/terminos" target="_blank" className="text-green-600 hover:underline">
+      Términos y Condiciones
+    </Link>{' '}
+    y la{' '}
+    <Link href="/privacidad" target="_blank" className="text-green-600 hover:underline">
+      Política de Privacidad
+    </Link>
+    .
+  </label>
+</div>
 
             <div className="text-center text-sm">
               <span className="text-muted-foreground">¿Ya tienes cuenta? </span>
